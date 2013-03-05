@@ -1,0 +1,51 @@
+#ifndef __ANENCODE_TYPES_AH__
+#define __ANENCODE_TYPES_AH__
+
+#include <gmpxx.h>
+
+template <>
+class Encoded<long> {
+  typedef mpz_class EncodedType;
+};
+
+template <>
+class Encoded<unsigned long> {
+  typedef mpz_class EncodedType;
+};
+
+template <>
+class Encoded<int> {
+  typedef mpz_class EncodedType;
+};
+
+template <>
+class Encoded<unsigned int> {
+  typedef mpz_class EncodedType;
+};
+
+template <>
+class Encoded<short> {
+  typedef long EncodedType;
+};
+
+template <>
+class Encoded<unsigned short> {
+  typedef unsigned long EncodedType;
+};
+
+template <>
+class Encoded<char> {
+  typedef int EncodedType;
+};
+
+template <>
+class Encoded<unsigned char> {
+  typedef unsigned int EncodedType;
+};
+
+template <>
+class Encoded<bool> {
+  typedef int EncodedType;
+};
+
+#endif

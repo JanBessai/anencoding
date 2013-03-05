@@ -1,0 +1,111 @@
+#ifndef __ANENCODE_AH__
+#define __ANENCODE_AH__
+
+#include <iostream>
+#include "lut.h"
+
+aspect ANEncode {
+  static const int A = 127;
+
+  pointcut encode() =
+    call("% protect<...>(...)");
+  advice encode() : after() {
+    tjp->result()->value *= A;
+  }
+
+  pointcut decode() =
+    call("% Protected<...>::operator %()")
+    && !negation()
+    && !bitwiseNegation();
+  advice decode() : after() {
+    *(tjp->result()) /= A;
+  }
+
+  pointcut addition() =
+    call("% Protected<...>::operator+(...)");
+  pointcut subtraction() =
+    call("% Protected<...>::operator-(...)");
+  pointcut multiplication() =
+    call("% Protected<...>::operator*(...)");
+  pointcut division() =
+    call ("% Protected<...>::operator/(...)");
+  pointcut negation() =
+    call ("% Protected<...>::operator!(...)");
+  pointcut conjunction() =
+    call("% Protected<...>::operator&&(...)")
+    && args("const Protected<...> &");
+  pointcut disjunction() =
+    call("% Protected<...>::operator||(...)")
+    && args("const Protected<...> &");
+  pointcut exclusiveDisjunction() =
+    call("% Protected<...>::operator^(...)")
+    && args("const Protected<...> &");
+  pointcut bitwiseNegation() =
+    call("% Protected<...>::operator~(...)");
+    
+
+  pointcut checkable() =
+    addition()
+    || subtraction()
+    || multiplication()
+    || division()
+    || negation()
+    || conjunction()
+    || disjunction()
+    || exclusiveDisjunction();
+
+  advice checkable() : after() {
+    if (tjp->result()->value % A != 0) {
+      std::cout << "Error detected!" << std::endl;
+      std::cout << tjp->result()->value << std::endl;
+    }
+  }
+
+  advice multiplication() : after() {
+    tjp->result()->value /= A;
+  }
+
+  advice division() : before() {
+    tjp->target()->value *= A;
+  }
+
+  advice negation() : after() {
+    tjp->result()->value = A - A * ((bool)tjp->target()->value);
+  }
+
+  advice conjunction() : after() {
+    tjp->result()->value = 
+      ((A * ((bool)tjp->target()->value)) *
+       (A * ((bool)tjp->arg<0>()->value))) / A;
+  }
+
+  advice disjunction() : after() {
+    tjp->result()->value =
+      ((A * ((bool)tjp->target()->value)) +
+       (A * ((bool)tjp->arg<0>()->value))) -
+      ((A * ((bool)tjp->target()->value)) *
+       (A * ((bool)tjp->arg<0>()->value)));
+  }
+
+  advice exclusiveDisjunction() : after() {
+    tjp->result()->value =
+      ((A * ((bool)tjp->target()->value)) +
+       (A * ((bool)tjp->arg<0>()->value))) % 2;
+  }
+
+  advice bitwiseNegation() : after() {
+    typedef typename JoinPoint::Target::EncodedType EncodedType;
+    EncodedType current = tjp->target()->value;
+    EncodedType result = 0;
+    do {
+      result *= 0x100;
+      result += (*ANNotTable_int)[(unsigned int)(current % EncodedType(0x100))];
+      std::cout << "ntable: " << (*ANNotTable_int)[(unsigned int)(current % EncodedType(0x100))] << std::endl;
+      current /= EncodedType(0x100);
+    } while (current);
+    tjp->result()->value = result;
+  }
+
+};
+
+#endif
